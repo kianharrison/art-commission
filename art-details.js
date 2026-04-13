@@ -48,6 +48,7 @@ const processEls = document.querySelectorAll(".art-process-image");
 if (imageEl) {
   imageEl.src = art.image;
   imageEl.alt = art.title;
+  imageEl.loading = "lazy";
 }
 
 if (titleEl) {

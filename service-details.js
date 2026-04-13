@@ -65,9 +65,27 @@ const SERVICE_DATA = {
   },
 };
 
+const normalizeServiceKey = (rawValue) => {
+  if (!rawValue) {
+    return "headshot";
+  }
+
+  const cleaned = rawValue
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+
+  if (cleaned === "head-shot") {
+    return "headshot";
+  }
+
+  return cleaned;
+};
+
 const params = new URLSearchParams(window.location.search);
-const serviceKey = params.get("service");
-const service = SERVICE_DATA[serviceKey] || SERVICE_DATA.headshot;
+const requestedServiceKey = normalizeServiceKey(params.get("service"));
+const service = SERVICE_DATA[requestedServiceKey] || SERVICE_DATA.headshot;
 
 document.title = `${service.name} Commission | KianLooksBetter`;
 

@@ -221,9 +221,9 @@ p {
 }
 
 @media(max-width: 768px){
-    .photo-gallery{
-        flex-direction: column;
-    }
+  .photo-gallery{
+    grid-template-columns: 1fr;
+  }
 }
 
 .button{
