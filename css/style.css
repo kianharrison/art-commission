@@ -89,17 +89,25 @@ p {
     column-gap: 8px;
     row-gap: 30px;
 }
+
 .photo-gallery{
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
 }
 
 .photo-gallery > div{
-  height: clamp(220px, 28vw, 320px);
+  height: clamp(250px, 35vw, 400px);
   overflow: hidden;
-  border-radius: 10px;
 }
+
+.white-paint{
+  width: 100%;
+  height: auto;
+  margin-top: -220px; /* Pulls the image up by 100px */
+  position: relative; /* Ensures it sits on top of the previous element */
+  z-index: 10;
+}
+
 .card{
     position: relative;
 }
