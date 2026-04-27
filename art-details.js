@@ -69,9 +69,16 @@ const setActiveImage = (index) => {
   activeImageIndex = boundedIndex;
   const nextImage = processImages[boundedIndex];
 
+  imageEl.classList.remove("art-blur-in");
+  // Reflow so the animation can replay on every step change.
+  // eslint-disable-next-line no-unused-expressions
+  imageEl.offsetWidth;
   imageEl.src = nextImage;
   imageEl.alt = `${art.title} process ${boundedIndex + 1}`;
   imageEl.loading = "lazy";
+  requestAnimationFrame(() => {
+    imageEl.classList.add("art-blur-in");
+  });
 
   if (imageSwitcherEl) {
     imageSwitcherEl.querySelectorAll(".art-switch-dot").forEach((button, buttonIndex) => {

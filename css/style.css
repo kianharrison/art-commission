@@ -2021,6 +2021,21 @@ body {
   margin-right: auto;
 }
 
+/* Art gallery cards: tighter corners + clear hover response */
+.gallery-page .art-display-grid .card[data-category="art"] .gallery-media {
+  border-radius: 4px !important;
+  transition:
+    transform 0.4s ease-in-out,
+    filter 0.4s ease-in-out,
+    box-shadow 0.4s ease-in-out;
+}
+
+.gallery-page .art-display-grid .card[data-category="art"]:hover .gallery-media {
+  transform: scale(1.03);
+  filter: brightness(1.08);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.24);
+}
+
 /* Animation previews: edge-to-edge and clean */
 .art-display-grid .video-card {
   background: transparent !important;
@@ -2030,6 +2045,8 @@ body {
 .art-display-grid .video-card .animation-thumb-shell {
   position: relative;
   background: transparent !important;
+  overflow: hidden;
+  border-radius: 12px;
 }
 
 .art-display-grid .video-card .animation-thumb {
@@ -2037,27 +2054,130 @@ body {
   height: 100%;
   object-fit: cover;
   border-radius: 12px;
+  transition: transform 0.4s ease-in-out, filter 0.4s ease-in-out;
 }
 
-/* Center play icon */
+/* Center play icon inside a circle */
+.art-display-grid .video-card .animation-thumb-shell::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.98);
+  background: rgba(0, 0, 0, 0.42);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.42);
+  opacity: 1;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  pointer-events: none;
+}
+
 .art-display-grid .video-card .animation-thumb-shell::after {
   content: "";
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-40%, -50%);
+  transform: translate(-30%, -50%);
   width: 0;
   height: 0;
-  border-top: 11px solid transparent;
-  border-bottom: 11px solid transparent;
-  border-left: 17px solid rgba(255, 255, 255, 0.97);
-  filter: drop-shadow(0 2px 7px rgba(0, 0, 0, 0.5));
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 14px solid rgba(255, 255, 255, 0.98);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  opacity: 1;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
   pointer-events: none;
+}
+
+/* Animation-only hover polish */
+.art-display-grid.animation-layout .video-card:hover .animation-thumb {
+  transform: scale(1.03);
+  filter: brightness(1.08);
+}
+
+.art-display-grid.animation-layout .video-card:hover .animation-thumb-shell::before {
+  transform: translate(-50%, -50%) scale(1.08);
+  opacity: 1;
+}
+
+.art-display-grid.animation-layout .video-card:hover .animation-thumb-shell::after {
+  transform: translate(-30%, -50%) scale(1.08);
+  opacity: 1;
 }
 
 /* Keep modal opening smooth */
 .animation-detail-modal {
+  background: rgba(8, 12, 22, 0.72);
+  backdrop-filter: blur(8px) saturate(105%);
   transition: opacity 0.22s ease, visibility 0.22s ease !important;
+}
+
+.animation-detail-dialog {
+  background: linear-gradient(
+    150deg,
+    rgba(15, 19, 31, 0.95),
+    rgba(26, 31, 49, 0.92)
+  );
+  border: 1px solid rgba(184, 196, 255, 0.22);
+}
+
+/* Art detail blur-in animation */
+.art-detail-image-wrap #art-detail-image {
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform 0.4s ease-in-out,
+    filter 0.4s ease-in-out,
+    opacity 0.4s ease-in-out;
+}
+
+.art-detail-image-wrap #art-detail-image.art-blur-in {
+  animation: art_blur_in 0.5s ease-in-out;
+}
+
+@keyframes art_blur_in {
+  0% {
+    filter: blur(10px);
+    opacity: 0.7;
+    transform: scale(1.008);
+  }
+  100% {
+    filter: blur(0);
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 999px) {
+  @keyframes art_blur_in {
+    0% {
+      filter: blur(7px);
+      opacity: 0.78;
+      transform: scale(1.006);
+    }
+    100% {
+      filter: blur(0);
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+.art-process-section .process-image {
+  transition:
+    transform 0.4s ease-in-out,
+    border-color 0.4s ease-in-out,
+    box-shadow 0.4s ease-in-out,
+    filter 0.4s ease-in-out,
+    opacity 0.4s ease-in-out;
+}
+
+.art-process-section .process-image:hover {
+  transform: scale(1.05);
+  filter: brightness(1.06);
 }
 
 /* Responsive scaling that preserves Left > Right ratio */
