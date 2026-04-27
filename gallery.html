@@ -105,22 +105,22 @@
         <div class="contain">
         <div id="gallery-grid" class="photo-gallery2 art-display-grid">
           <div class="card" data-category="art" data-art-type="portrait">
-              <a class="art-link" href="art-details.html?art=1"><img src="art/1.jpg"></a>
+              <a class="art-link" href="art-details.html?art=1"><img class="gallery-media" src="art/1.jpg" loading="eager" fetchpriority="high" decoding="async"></a>
           </div>
           <div class="card" data-category="art" data-art-type="portrait">
-              <a class="art-link" href="art-details.html?art=2"><img src="art/2.jpg"></a>
+              <a class="art-link" href="art-details.html?art=2"><img class="gallery-media" src="art/2.jpg" loading="eager" fetchpriority="high" decoding="async"></a>
           </div>
           <div class="card" data-category="art" data-art-type="fullbody">
-              <a class="art-link" href="art-details.html?art=3"><img src="art/3.png"></a>
+              <a class="art-link" href="art-details.html?art=3"><img class="gallery-media" src="art/3.png" loading="lazy" fetchpriority="low" decoding="async"></a>
           </div>
           <div class="card" data-category="art" data-art-type="fullbody">
-            <a class="art-link" href="art-details.html?art=4"><img src="art/4.png"></a>
+            <a class="art-link" href="art-details.html?art=4"><img class="gallery-media" src="art/4.png" loading="lazy" fetchpriority="low" decoding="async"></a>
           </div>
           <div class="card" data-category="art" data-art-type="fullbody">
-            <a class="art-link" href="art-details.html?art=5"><img src="art/5.jpg"></a>
+            <a class="art-link" href="art-details.html?art=5"><img class="gallery-media" src="art/5.jpg" loading="lazy" fetchpriority="low" decoding="async"></a>
           </div>
           <div class="card" data-category="art" data-art-type="fullbody">
-            <a class="art-link" href="art-details.html?art=6"><img src="art/6.png"></a>
+            <a class="art-link" href="art-details.html?art=6"><img class="gallery-media" src="art/6.png" loading="lazy" fetchpriority="low" decoding="async"></a>
           </div>
         </div>
         <p id="gallery-empty-state" class="gallery-empty-state" aria-live="polite">No items in this category yet. Please check back soon.</p>
@@ -128,6 +128,22 @@
       </section>
       <!-- End Gallery Section -->
       <br><br><br><br><br><br>
+    </div>
+
+    <div class="animation-detail-modal" id="animation-detail-modal" aria-hidden="true">
+      <div class="animation-detail-dialog">
+        <button class="animation-detail-close" id="animation-detail-close" aria-label="Close animation details">X</button>
+        <div class="animation-detail-layout">
+          <section class="animation-detail-player" id="animation-detail-player"></section>
+          <section class="animation-detail-meta">
+            <p class="animation-detail-kicker">Animation Details</p>
+            <h2 id="animation-detail-title">Animation Title</h2>
+            <p><strong>Category:</strong> <span id="animation-detail-category">Animation</span></p>
+            <p><strong>Art Type:</strong> <span id="animation-detail-art-type">Motion</span></p>
+            <p id="animation-detail-description"></p>
+          </section>
+        </div>
+      </div>
     </div>
 
       <!-- Footer -->

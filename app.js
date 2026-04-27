@@ -38,6 +38,8 @@ const revealSelectors = [
   "#services .service-item",
   "#contact .contact-item",
   ".button",
+  ".terms-service-block",
+  ".terms-service-block li",
   ".selected-img-section",
   ".art-detail-image-wrap",
   ".art-detail-info-wrap",
@@ -153,6 +155,36 @@ if (previewModal && previewImage && previewStage && previewClose) {
   });
 }
 
+const hydrateSmoothImages = (selectors) => {
+  document.querySelectorAll(selectors).forEach((img) => {
+    if (img.dataset.smoothHydrated === "true") {
+      return;
+    }
+
+    img.dataset.smoothHydrated = "true";
+    img.style.opacity = "0";
+    img.style.transition = "opacity 260ms ease";
+
+    const showImage = () => {
+      img.style.opacity = "1";
+    };
+
+    const hideFailed = () => {
+      img.style.opacity = "0";
+      img.style.display = "none";
+    };
+
+    if (img.complete && img.naturalWidth > 0) {
+      showImage();
+    } else {
+      img.addEventListener("load", showImage, { once: true });
+      img.addEventListener("error", hideFailed, { once: true });
+    }
+  });
+};
+
+hydrateSmoothImages(".selected-img, .process-image, #art-detail-image");
+
 const galleryCategorySelect = document.getElementById("gallery-category");
 const artSubcategorySelect = document.getElementById("art-subcategory");
 const artSubcategoryGroup = document.getElementById("art-subcategory-group");
@@ -161,86 +193,175 @@ const galleryEmptyState = document.getElementById("gallery-empty-state");
 
 if (galleryCategorySelect && artSubcategorySelect && galleryGrid) {
   const YOUTUBE_ANIMATION_CONFIG = {
-    // Add your real channel id (UC...) and YouTube Data API key to auto-load videos.
-    channelId: "UCufJo4cDL_B6-X8lgVWNsQQ",
     apiKey: "AIzaSyDrzZBSBVhDkenFhkfDObQy2kA1TEEPWe0",
+    playlistId: "PLL4LZEOkS-eozTZvO_SPA7SKsc-n8DlEn",
     maxResults: 24,
-    fallbackVideoIds: [],
   };
 
-  const createVideoCard = (videoId, title) => {
+  const modalEl = document.getElementById("animation-detail-modal");
+  const modalPlayerEl = document.getElementById("animation-detail-player");
+  const modalCloseEl = document.getElementById("animation-detail-close");
+  const modalTitleEl = document.getElementById("animation-detail-title");
+  const modalCategoryEl = document.getElementById("animation-detail-category");
+  const modalArtTypeEl = document.getElementById("animation-detail-art-type");
+  const modalDescriptionEl = document.getElementById("animation-detail-description");
+
+  const apiCache = new Map();
+  let animationsRendered = false;
+
+  const getVideoType = (videoId, snippet = {}) => {
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const shortsUrl = `https://www.youtube.com/shorts/${videoId}`;
+    const markerText = `${snippet.title || ""} ${snippet.description || ""}`.toLowerCase();
+
+    if (
+      shortsUrl.includes("/shorts/") &&
+      (markerText.includes("/shorts/") ||
+        markerText.includes("#shorts") ||
+        markerText.includes("shorts"))
+    ) {
+      return "shorts";
+    }
+    if (watchUrl.includes("watch?v=")) {
+      return "long_form";
+    }
+    return "unknown";
+  };
+
+  const memoizedYoutubeJson = (endpoint, params) => {
+    const paramKey = JSON.stringify(Object.keys(params).sort().reduce((acc, key) => {
+      acc[key] = params[key];
+      return acc;
+    }, {}));
+    const cacheKey = `${endpoint}::${paramKey}`;
+
+    if (!apiCache.has(cacheKey)) {
+      const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
+      url.search = new URLSearchParams({
+        ...params,
+        key: YOUTUBE_ANIMATION_CONFIG.apiKey,
+      }).toString();
+
+      apiCache.set(
+        cacheKey,
+        fetch(url.toString()).then((response) => {
+          if (!response.ok) {
+            throw new Error(`Unable to load YouTube ${endpoint}.`);
+          }
+          return response.json();
+        })
+      );
+    }
+
+    return apiCache.get(cacheKey);
+  };
+
+  const hydrateGalleryImages = (scope = document) => {
+    scope.querySelectorAll("img.gallery-media").forEach((img) => {
+      if (img.dataset.mediaHydrated === "true") {
+        return;
+      }
+
+      img.dataset.mediaHydrated = "true";
+      img.alt = "";
+      img.classList.remove("is-ready");
+      img.classList.add("is-pending");
+
+      const markReady = () => {
+        img.classList.remove("is-pending");
+        img.classList.add("is-ready");
+      };
+
+      const markFailed = () => {
+        img.classList.remove("is-pending");
+        img.classList.add("is-error");
+        img.style.display = "none";
+      };
+
+      if (img.complete && img.naturalWidth > 0) {
+        markReady();
+      } else {
+        img.addEventListener("load", markReady, { once: true });
+        img.addEventListener("error", markFailed, { once: true });
+      }
+    });
+  };
+
+  const createVideoCard = (video, index) => {
     const card = document.createElement("div");
     card.className = "card video-card";
     card.dataset.category = "animation";
-    card.dataset.artType = "all";
+    card.dataset.artType = "motion";
+    card.dataset.videoId = video.videoId;
+    card.dataset.videoTitle = video.title;
+    card.dataset.videoDescription = video.description;
+    card.dataset.videoCategory = "Animation";
+    card.dataset.videoArtType = "Motion";
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-label", `Open animation details for ${video.title}`);
+
+    const imageLoading = index < 2 ? "eager" : "lazy";
+    const imagePriority = index < 2 ? "high" : "low";
+
     card.innerHTML = `
-      <iframe
-        src="https://www.youtube-nocookie.com/embed/${videoId}"
-        title="${title || "Animation video"}"
-        loading="lazy"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowfullscreen>
-      </iframe>
+      <div class="animation-thumb-shell">
+        <img
+          class="gallery-media animation-thumb"
+          src="${video.thumbnail}"
+          loading="${imageLoading}"
+          fetchpriority="${imagePriority}"
+          decoding="async"
+          alt=""
+        >
+      </div>
+      <p class="animation-thumb-title">${video.title}</p>
     `;
     return card;
   };
 
-  const addFallbackAnimationCards = () => {
-    if (!YOUTUBE_ANIMATION_CONFIG.fallbackVideoIds.length) {
+  const openAnimationDetail = (videoData) => {
+    if (!modalEl || !modalPlayerEl) {
       return;
     }
 
-    YOUTUBE_ANIMATION_CONFIG.fallbackVideoIds.forEach((videoId, index) => {
-      galleryGrid.appendChild(
-        createVideoCard(videoId, `Animation video ${index + 1}`)
-      );
-    });
+    const videoId = videoData.videoId || "";
+    const title = videoData.videoTitle || "Animation";
+    const category = videoData.videoCategory || "Animation";
+    const artType = videoData.videoArtType || "Motion";
+    const description = videoData.videoDescription || "No description available.";
+
+    modalTitleEl.textContent = title;
+    modalCategoryEl.textContent = category;
+    modalArtTypeEl.textContent = artType;
+    modalDescriptionEl.textContent = description;
+
+    modalPlayerEl.innerHTML = `
+      <iframe
+        src="https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0"
+        title="${title}"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen>
+      </iframe>
+    `;
+
+    modalEl.classList.add("open");
+    modalEl.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
   };
 
-  const fetchYoutubeJson = async (endpoint, params) => {
-    const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
-    url.search = new URLSearchParams({
-      ...params,
-      key: YOUTUBE_ANIMATION_CONFIG.apiKey,
-    }).toString();
-
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new Error(`Unable to load YouTube ${endpoint}.`);
+  const closeAnimationDetail = () => {
+    if (!modalEl || !modalPlayerEl) {
+      return;
     }
-
-    return response.json();
+    modalEl.classList.remove("open");
+    modalEl.setAttribute("aria-hidden", "true");
+    modalPlayerEl.innerHTML = "";
+    document.body.style.overflow = "";
   };
 
-  const getUploadsPlaylistId = async () => {
-    const data = await fetchYoutubeJson("channels", {
-      part: "contentDetails",
-      id: YOUTUBE_ANIMATION_CONFIG.channelId,
-      maxResults: "1",
-    });
-
-    const channel = (data.items || [])[0];
-    return (
-      channel &&
-      channel.contentDetails &&
-      channel.contentDetails.relatedPlaylists &&
-      channel.contentDetails.relatedPlaylists.uploads
-    );
-  };
-
-  const getChannelUploadVideos = async () => {
-    const getVideoTypeFromUrl = (url) => {
-      if (url.includes("/shorts/")) {
-        return "shorts";
-      }
-      if (url.includes("watch?v=")) {
-        return "long_form";
-      }
-      return "unknown";
-    };
-
-    const uploadsPlaylistId = await getUploadsPlaylistId();
-    if (!uploadsPlaylistId) {
+  const getPlaylistVideos = async () => {
+    if (!YOUTUBE_ANIMATION_CONFIG.apiKey || !YOUTUBE_ANIMATION_CONFIG.playlistId) {
       return [];
     }
 
@@ -249,9 +370,9 @@ if (galleryCategorySelect && artSubcategorySelect && galleryGrid) {
     let pageToken = "";
 
     while (collected.length < YOUTUBE_ANIMATION_CONFIG.maxResults) {
-      const data = await fetchYoutubeJson("playlistItems", {
+      const data = await memoizedYoutubeJson("playlistItems", {
         part: "snippet,contentDetails",
-        playlistId: uploadsPlaylistId,
+        playlistId: YOUTUBE_ANIMATION_CONFIG.playlistId,
         maxResults: "50",
         pageToken,
       });
@@ -263,28 +384,43 @@ if (galleryCategorySelect && artSubcategorySelect && galleryGrid) {
           (item.snippet &&
             item.snippet.resourceId &&
             item.snippet.resourceId.videoId);
-        const title = item.snippet && item.snippet.title;
-        const watchUrl = videoId
-          ? `https://www.youtube.com/watch?v=${videoId}`
-          : "";
-        const videoType = getVideoTypeFromUrl(watchUrl);
 
         if (!videoId || seen.has(videoId)) {
           return;
         }
 
+        const snippet = item.snippet || {};
+        const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        const videoType = getVideoType(videoId, snippet);
         if (videoType !== "long_form") {
           return;
         }
+        const thumbnail =
+          (snippet.thumbnails &&
+            (snippet.thumbnails.maxres ||
+              snippet.thumbnails.high ||
+              snippet.thumbnails.medium ||
+              snippet.thumbnails.default) &&
+            (snippet.thumbnails.maxres ||
+              snippet.thumbnails.high ||
+              snippet.thumbnails.medium ||
+              snippet.thumbnails.default).url) ||
+          "";
 
         seen.add(videoId);
-        collected.push({ videoId, title, watchUrl, videoType });
+        collected.push({
+          videoId,
+          title: snippet.title || "Animation Video",
+          description: snippet.description || "No description available.",
+          thumbnail,
+          watchUrl,
+          videoType,
+        });
       });
 
       if (!data.nextPageToken || !items.length) {
         break;
       }
-
       pageToken = data.nextPageToken;
     }
 
@@ -292,25 +428,19 @@ if (galleryCategorySelect && artSubcategorySelect && galleryGrid) {
   };
 
   const loadAnimationCards = async () => {
-    if (!YOUTUBE_ANIMATION_CONFIG.apiKey || !YOUTUBE_ANIMATION_CONFIG.channelId) {
-      addFallbackAnimationCards();
+    if (animationsRendered) {
       return;
     }
 
     try {
-      const uploadedVideos = await getChannelUploadVideos();
-      if (!uploadedVideos.length) {
-        addFallbackAnimationCards();
-        return;
-      }
-
-      uploadedVideos.forEach((video) => {
-        galleryGrid.appendChild(
-          createVideoCard(video.videoId, video.title || "Animation video")
-        );
+      const videos = await getPlaylistVideos();
+      videos.forEach((video, index) => {
+        galleryGrid.appendChild(createVideoCard(video, index));
       });
+      animationsRendered = true;
+      hydrateGalleryImages(galleryGrid);
     } catch (error) {
-      addFallbackAnimationCards();
+      animationsRendered = true;
     }
   };
 
@@ -326,11 +456,9 @@ if (galleryCategorySelect && artSubcategorySelect && galleryGrid) {
     galleryGrid.classList.toggle("animation-layout", category === "animation");
 
     let visibleCount = 0;
-
     getGalleryCards().forEach((card) => {
       const cardCategory = card.dataset.category || "art";
       const cardArtType = card.dataset.artType || "portrait";
-
       const matchesCategory = cardCategory === category;
       const matchesArtType =
         category !== "art" || artType === "all" || cardArtType === artType;
@@ -351,8 +479,59 @@ if (galleryCategorySelect && artSubcategorySelect && galleryGrid) {
     }
   };
 
+  galleryGrid.addEventListener("click", (event) => {
+    const card = event.target.closest(".card");
+    if (!card || !galleryGrid.contains(card)) {
+      return;
+    }
+
+    if (card.dataset.category === "animation") {
+      event.preventDefault();
+      openAnimationDetail(card.dataset);
+      return;
+    }
+
+    if (card.dataset.category === "art") {
+      const destination = card.querySelector(".art-link");
+      if (destination && destination.href) {
+        event.preventDefault();
+        window.location.href = destination.href;
+      }
+    }
+  });
+
+  galleryGrid.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    const card = event.target.closest(".card");
+    if (!card || card.dataset.category !== "animation") {
+      return;
+    }
+    event.preventDefault();
+    openAnimationDetail(card.dataset);
+  });
+
+  if (modalCloseEl) {
+    modalCloseEl.addEventListener("click", closeAnimationDetail);
+  }
+  if (modalEl) {
+    modalEl.addEventListener("click", (event) => {
+      if (event.target === modalEl) {
+        closeAnimationDetail();
+      }
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && modalEl && modalEl.classList.contains("open")) {
+      closeAnimationDetail();
+    }
+  });
+
   galleryCategorySelect.addEventListener("change", applyGalleryFilters);
   artSubcategorySelect.addEventListener("change", applyGalleryFilters);
+
+  hydrateGalleryImages(galleryGrid);
   loadAnimationCards().finally(() => {
     applyStagger(".photo-gallery2 .card", 70);
     applyGalleryFilters();

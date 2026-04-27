@@ -46,11 +46,18 @@ const ART_DATA = {
 const params = new URLSearchParams(window.location.search);
 const artId = params.get("art");
 const art = ART_DATA[artId] || ART_DATA[1];
+const artIds = Object.keys(ART_DATA)
+  .map((id) => Number.parseInt(id, 10))
+  .filter((id) => Number.isInteger(id))
+  .sort((a, b) => a - b);
 
 const imageEl = document.getElementById("art-detail-image");
 const titleEl = document.getElementById("art-detail-title");
 const descEl = document.getElementById("art-detail-description");
 const imageSwitcherEl = document.getElementById("art-image-switcher");
+const processEls = document.querySelectorAll(".art-process-image");
+const prevArtBtn = document.getElementById("art-nav-prev");
+const nextArtBtn = document.getElementById("art-nav-next");
 const processImages = Array.isArray(art.processImages) && art.processImages.length
   ? art.processImages
   : [art.image];
@@ -74,6 +81,12 @@ const setActiveImage = (index) => {
     imageSwitcherEl.querySelectorAll(".art-switch-dot").forEach((button, buttonIndex) => {
       button.classList.toggle("active", buttonIndex === boundedIndex);
       button.setAttribute("aria-pressed", buttonIndex === boundedIndex ? "true" : "false");
+    });
+  }
+
+  if (processEls.length) {
+    processEls.forEach((preview, previewIndex) => {
+      preview.classList.toggle("active", previewIndex === boundedIndex);
     });
   }
 };
@@ -104,6 +117,34 @@ if (imageSwitcherEl) {
   });
 
   setActiveImage(activeImageIndex);
+}
+
+if (processEls.length) {
+  processEls.forEach((image, index) => {
+    image.src = processImages[index] || processImages[0];
+    image.alt = `${art.title} process preview ${index + 1}`;
+    image.loading = "lazy";
+    image.classList.toggle("active", index === activeImageIndex);
+    image.addEventListener("click", () => setActiveImage(index));
+  });
+}
+
+const currentArtId = Number.parseInt(artId || "1", 10);
+const currentIndex = artIds.indexOf(currentArtId);
+
+const navigateArt = (direction) => {
+  const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+  const nextIndex = (safeIndex + direction + artIds.length) % artIds.length;
+  const nextId = artIds[nextIndex];
+  window.location.href = `art-details.html?art=${nextId}`;
+};
+
+if (prevArtBtn) {
+  prevArtBtn.addEventListener("click", () => navigateArt(-1));
+}
+
+if (nextArtBtn) {
+  nextArtBtn.addEventListener("click", () => navigateArt(1));
 }
 
 document.title = `${art.title} | KianLooksBetter`;
