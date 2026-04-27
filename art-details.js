@@ -46,10 +46,6 @@ const ART_DATA = {
 const params = new URLSearchParams(window.location.search);
 const artId = params.get("art");
 const art = ART_DATA[artId] || ART_DATA[1];
-const artIds = Object.keys(ART_DATA)
-  .map((id) => Number.parseInt(id, 10))
-  .filter((id) => Number.isInteger(id))
-  .sort((a, b) => a - b);
 
 const imageEl = document.getElementById("art-detail-image");
 const titleEl = document.getElementById("art-detail-title");
@@ -58,14 +54,14 @@ const imageSwitcherEl = document.getElementById("art-image-switcher");
 const processEls = document.querySelectorAll(".art-process-image");
 const prevArtBtn = document.getElementById("art-nav-prev");
 const nextArtBtn = document.getElementById("art-nav-next");
-const processImages = Array.isArray(art.processImages) && art.processImages.length
-  ? art.processImages
-  : [art.image];
+const resolvedArtId = String(artId && ART_DATA[artId] ? artId : 1);
+
+let processImages = [];
 
 let activeImageIndex = 0;
 
 const setActiveImage = (index) => {
-  if (!imageEl) {
+  if (!imageEl || !processImages.length) {
     return;
   }
 
@@ -91,10 +87,6 @@ const setActiveImage = (index) => {
   }
 };
 
-if (imageEl) {
-  setActiveImage(0);
-}
-
 if (titleEl) {
   titleEl.textContent = art.title;
 }
@@ -103,7 +95,11 @@ if (descEl) {
   descEl.textContent = art.description;
 }
 
-if (imageSwitcherEl) {
+const renderImageSwitcher = () => {
+  if (!imageSwitcherEl) {
+    return;
+  }
+
   imageSwitcherEl.innerHTML = "";
 
   processImages.forEach((_, index) => {
@@ -115,36 +111,92 @@ if (imageSwitcherEl) {
     switchButton.addEventListener("click", () => setActiveImage(index));
     imageSwitcherEl.appendChild(switchButton);
   });
+};
 
-  setActiveImage(activeImageIndex);
-}
+const renderProcessThumbnails = () => {
+  if (!processEls.length) {
+    return;
+  }
 
-if (processEls.length) {
   processEls.forEach((image, index) => {
-    image.src = processImages[index] || processImages[0];
+    const src = processImages[index];
+    if (!src) {
+      image.style.display = "none";
+      return;
+    }
+
+    image.style.display = "block";
+    image.src = src;
     image.alt = `${art.title} process preview ${index + 1}`;
     image.loading = "lazy";
     image.classList.toggle("active", index === activeImageIndex);
     image.addEventListener("click", () => setActiveImage(index));
   });
-}
+};
 
-const currentArtId = Number.parseInt(artId || "1", 10);
-const currentIndex = artIds.indexOf(currentArtId);
-
-const navigateArt = (direction) => {
-  const safeIndex = currentIndex === -1 ? 0 : currentIndex;
-  const nextIndex = (safeIndex + direction + artIds.length) % artIds.length;
-  const nextId = artIds[nextIndex];
-  window.location.href = `art-details.html?art=${nextId}`;
+const stepProcessImage = (direction) => {
+  if (!processImages.length) {
+    return;
+  }
+  const nextIndex =
+    (activeImageIndex + direction + processImages.length) % processImages.length;
+  setActiveImage(nextIndex);
 };
 
 if (prevArtBtn) {
-  prevArtBtn.addEventListener("click", () => navigateArt(-1));
+  prevArtBtn.addEventListener("click", () => stepProcessImage(-1));
 }
 
 if (nextArtBtn) {
-  nextArtBtn.addEventListener("click", () => navigateArt(1));
+  nextArtBtn.addEventListener("click", () => stepProcessImage(1));
 }
+
+const canLoadImage = (src) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = src;
+  });
+
+const resolveProcessImages = async () => {
+  const fallback =
+    Array.isArray(art.processImages) && art.processImages.length
+      ? [...art.processImages]
+      : [art.image];
+
+  const dynamic = [art.image];
+  const extensions = ["png", "jpg", "jpeg", "webp"];
+
+  for (let step = 2; step <= 8; step += 1) {
+    let foundSource = "";
+
+    for (const ext of extensions) {
+      const candidate = `art/${resolvedArtId}_${step}.${ext}`;
+      const exists = await canLoadImage(candidate);
+      if (exists) {
+        foundSource = candidate;
+        break;
+      }
+    }
+
+    if (!foundSource) {
+      break;
+    }
+
+    dynamic.push(foundSource);
+  }
+
+  return dynamic.length > 1 ? dynamic : fallback;
+};
+
+const initArtDetail = async () => {
+  processImages = await resolveProcessImages();
+  renderImageSwitcher();
+  renderProcessThumbnails();
+  setActiveImage(0);
+};
+
+initArtDetail();
 
 document.title = `${art.title} | KianLooksBetter`;
