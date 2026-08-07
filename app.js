@@ -17,6 +17,34 @@ if (header) {
   });
 }
 
+const mobileNav = document.querySelector(".nav-grid2");
+const quickDmLinks = document.querySelector(".quick-dm-links");
+const mobileScrollQuery = window.matchMedia("(max-width: 768px)");
+let lastScrollY = window.scrollY;
+
+const updateMobileChrome = () => {
+  if (!mobileNav || !quickDmLinks || !mobileScrollQuery.matches) {
+    return;
+  }
+
+  const currentScrollY = window.scrollY;
+  const scrollingDown = currentScrollY > lastScrollY;
+  const shouldHide = scrollingDown && currentScrollY > 40;
+
+  mobileNav.classList.toggle("mobile-hidden", shouldHide);
+  quickDmLinks.classList.toggle("mobile-hidden", shouldHide);
+  lastScrollY = currentScrollY;
+};
+
+if (mobileNav && quickDmLinks) {
+  document.addEventListener("scroll", updateMobileChrome, { passive: true });
+  mobileScrollQuery.addEventListener("change", () => {
+    lastScrollY = window.scrollY;
+    mobileNav.classList.remove("mobile-hidden");
+    quickDmLinks.classList.remove("mobile-hidden");
+  });
+}
+
 if (hamburger && mobileMenu && menuItems.length) {
   menuItems.forEach((item) => {
     item.addEventListener("click", () => {

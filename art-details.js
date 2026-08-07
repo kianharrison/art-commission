@@ -41,6 +41,13 @@ const ART_DATA = {
     description:
       "<p>Selfie illustration of Kian with a nonchalant look. The piece is built to feel personal and grounded, with the expression doing most of the storytelling while the lighting and finish keep the image crisp and modern. The goal was to preserve attitude and likeness without losing the stylized edge of the final render.</p><ul><li><strong>Krita:</strong> used for concept sketching, base planning, and rough visual direction.</li><li><strong>Paint Tool SAI:</strong> used for the full render, lighting effects, color shaping, and final detailing.</li></ul>",
   },
+  7: {
+    title: "Ammy",
+    image: "art/7.png",
+    processImages: ["art/7.png", "art/7_1.png", "art/7_2.png"],
+    description:
+      "<p> Female portrait</p><ul><li><strong>Krita:</strong> used for concept sketching, base planning, and rough visual direction.</li><li><strong>Paint Tool SAI:</strong> used for the full render, lighting effects, color shaping, and final detailing.</li></ul>",
+  },
 };
 
 const params = new URLSearchParams(window.location.search);
