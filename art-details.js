@@ -48,6 +48,13 @@ const ART_DATA = {
     description:
       "<p> Female portrait</p><ul><li><strong>Krita:</strong> used for concept sketching, base planning, and rough visual direction.</li><li><strong>Paint Tool SAI:</strong> used for the full render, lighting effects, color shaping, and final detailing.</li></ul>",
   },
+  8: {
+    title: "Commission Artwork",
+    image: "art/8.png",
+    processImages: ["art/8.png"],
+    description:
+      "<p>A full character-focused artwork with strong shape language, clean presentation, and polished digital rendering. The piece is built to show personality at a glance while keeping the pose, styling, and color choices readable for portfolio viewing.</p><ul><li><strong>Krita:</strong> used for early composition planning and sketch refinement.</li><li><strong>Paint Tool SAI:</strong> used for color rendering, finishing details, and final polish.</li></ul>",
+  },
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -69,6 +76,7 @@ let activeImageIndex = 0;
 let touchStartX = 0;
 let touchStartY = 0;
 let touchActive = false;
+let lastSwipeAt = 0;
 
 const setActiveImage = (index) => {
   if (!imageEl || !processImages.length) {
@@ -234,6 +242,15 @@ const attachSwipeHandlers = () => {
     touchStartY = firstTouch.clientY;
   }, { passive: true });
 
+  if (imageEl) {
+    imageEl.addEventListener("click", (event) => {
+      if (Date.now() - lastSwipeAt < 450) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, true);
+  }
+
   stage.addEventListener("touchend", (event) => {
     if (!touchActive) {
       return;
@@ -253,8 +270,10 @@ const attachSwipeHandlers = () => {
       return;
     }
 
+    event.preventDefault();
+    lastSwipeAt = Date.now();
     handleSwipeNavigation(deltaX < 0 ? 1 : -1);
-  }, { passive: true });
+  }, { passive: false });
 };
 
 const initArtDetail = async () => {

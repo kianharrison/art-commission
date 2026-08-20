@@ -17,40 +17,48 @@ if (header) {
   });
 }
 
-const mobileNav = document.querySelector(".nav-grid2");
-const quickDmLinks = document.querySelector(".quick-dm-links");
-const mobileScrollQuery = window.matchMedia("(max-width: 768px)");
-let lastScrollY = window.scrollY;
-
-const updateMobileChrome = () => {
-  if (!mobileNav || !quickDmLinks || !mobileScrollQuery.matches) {
-    return;
-  }
-
-  const currentScrollY = window.scrollY;
-  const scrollingDown = currentScrollY > lastScrollY;
-  const shouldHide = scrollingDown && currentScrollY > 40;
-
-  mobileNav.classList.toggle("mobile-hidden", shouldHide);
-  quickDmLinks.classList.toggle("mobile-hidden", shouldHide);
-  lastScrollY = currentScrollY;
-};
-
-if (mobileNav && quickDmLinks) {
-  document.addEventListener("scroll", updateMobileChrome, { passive: true });
-  mobileScrollQuery.addEventListener("change", () => {
-    lastScrollY = window.scrollY;
-    mobileNav.classList.remove("mobile-hidden");
-    quickDmLinks.classList.remove("mobile-hidden");
-  });
-}
-
 if (hamburger && mobileMenu && menuItems.length) {
   menuItems.forEach((item) => {
     item.addEventListener("click", () => {
       hamburger.classList.remove("active");
       mobileMenu.classList.remove("active");
     });
+  });
+}
+
+const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+const mobileMenuPanel = document.getElementById("mobile-menu-panel");
+const mobileMenuBackdrop = document.getElementById("mobile-menu-backdrop");
+
+if (mobileMenuToggle && mobileMenuPanel && mobileMenuBackdrop) {
+  const setMobileMenuOpen = (isOpen) => {
+    mobileMenuToggle.classList.toggle("open", isOpen);
+    mobileMenuPanel.classList.toggle("open", isOpen);
+    mobileMenuBackdrop.classList.toggle("open", isOpen);
+    mobileMenuToggle.setAttribute("aria-expanded", String(isOpen));
+    mobileMenuToggle.setAttribute("aria-label", isOpen ? "Close navigation menu" : "Open navigation menu");
+    mobileMenuBackdrop.setAttribute("aria-hidden", String(!isOpen));
+    document.body.style.overflow = isOpen ? "hidden" : "";
+  };
+
+  mobileMenuToggle.addEventListener("click", () => {
+    setMobileMenuOpen(!mobileMenuPanel.classList.contains("open"));
+  });
+
+  mobileMenuBackdrop.addEventListener("click", () => {
+    setMobileMenuOpen(false);
+  });
+
+  mobileMenuPanel.querySelectorAll('a[href^="#"]').forEach((link) => {
+    link.addEventListener("click", () => {
+      setMobileMenuOpen(false);
+    });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && mobileMenuPanel.classList.contains("open")) {
+      setMobileMenuOpen(false);
+    }
   });
 }
 
@@ -86,7 +94,7 @@ if (commissionTriggerBtn && commissionStatusModal && commissionStatusClose) {
   });
 }
 
-document.querySelectorAll('.nav-grid a[href^="#"], .nav-grid2 a[href^="#"]').forEach((link) => {
+document.querySelectorAll('.nav-grid a[href^="#"], .nav-grid2 a[href^="#"], .mobile-menu-panel a[href^="#"]').forEach((link) => {
   link.addEventListener("click", (event) => {
     const target = document.querySelector(link.getAttribute("href"));
 
@@ -114,6 +122,8 @@ const revealSelectors = [
   ".button",
   ".terms-service-block",
   ".terms-service-block li",
+  "#reviews",
+  ".about-profile",
   ".selected-img-section",
   ".art-detail-image-wrap",
   ".art-detail-info-wrap",
